@@ -4,7 +4,7 @@ import { analyze } from "./scoring/analyze";
 import { exportJSON, downloadMD, parseImport, genMD } from "./export/io";
 import { useStorage } from "./hooks/useStorage";
 import MDPreview from "./components/MDPreview";
-import { W } from "./styles";
+import Layout from "./components/Layout";
 
 import {
   HomeScreen, SetupScreen,
@@ -57,48 +57,54 @@ export default function App() {
 
   const mdModal = showMD ? <MDPreview mdText={mdText} onDownload={doDownloadMD} onClose={() => setShowMD(false)} /> : null;
 
-  if (!loaded) return <div style={W}><p style={{ color: "#888" }}>Chargement...</p></div>;
-
-  // ── ROUTER ──
-  if (screen === "home") return (
-    <HomeScreen
-      teams={teams} evTeams={evTeams} results={results} pending={pending}
-      goEval={goEval} goView={goView} previewMD={previewMD}
-      doImport={doImport} doReset={doReset}
-      onEcosystem={() => { setPrev("home"); setScreen("ecosystem"); }}
-      showTools={showTools} setShowTools={setShowTools}
-      showImport={showImport} setShowImport={setShowImport}
-      impText={impText} setImpText={setImpText} impErr={impErr} setImpErr={setImpErr}
-      onAddTeam={() => { setSMode("single"); setNName(""); setBText(""); setScreen("setup"); }}
-      mdModal={mdModal}
-    />
+  if (!loaded) return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", color: "#999" }}>
+      Chargement...
+    </div>
   );
 
-  if (screen === "setup") return (
-    <SetupScreen
-      sMode={sMode} setSMode={setSMode} nName={nName} setNName={setNName}
-      bText={bText} setBText={setBText}
-      teams={teams} setTeams={setTeams} goEval={goEval}
-      onBack={() => setScreen("home")}
-    />
-  );
+  // ── SCREEN CONTENT ──
+  let content;
 
-  if (screen === "eval") {
-    if (step === 0) return <EvalBlocA team={t} sCA={sCA} sTA={sTA} onNext={() => setStep(1)} onCancel={() => setScreen(prev)} />;
-    if (step === 1) return <EvalBlocB team={t} sCB={sCB} sTB={sTB} patch={patch} onNext={() => setStep(2)} onBack={() => setStep(0)} />;
-    if (step === 2) return (
+  if (screen === "home") {
+    content = (
+      <HomeScreen
+        teams={teams} evTeams={evTeams} results={results} pending={pending}
+        goEval={goEval} goView={goView} previewMD={previewMD}
+        doImport={doImport} doReset={doReset}
+        onEcosystem={() => { setPrev("home"); setScreen("ecosystem"); }}
+        showTools={showTools} setShowTools={setShowTools}
+        showImport={showImport} setShowImport={setShowImport}
+        impText={impText} setImpText={setImpText} impErr={impErr} setImpErr={setImpErr}
+        onAddTeam={() => { setSMode("single"); setNName(""); setBText(""); setScreen("setup"); }}
+        mdModal={mdModal}
+      />
+    );
+  } else if (screen === "setup") {
+    content = (
+      <SetupScreen
+        sMode={sMode} setSMode={setSMode} nName={nName} setNName={setNName}
+        bText={bText} setBText={setBText}
+        teams={teams} setTeams={setTeams} goEval={goEval}
+        onBack={() => setScreen("home")}
+      />
+    );
+  } else if (screen === "eval") {
+    if (step === 0) content = <EvalBlocA team={t} sCA={sCA} sTA={sTA} onNext={() => setStep(1)} onCancel={() => setScreen(prev)} />;
+    else if (step === 1) content = <EvalBlocB team={t} sCB={sCB} sTB={sTB} patch={patch} onNext={() => setStep(2)} onBack={() => setStep(0)} />;
+    else if (step === 2) content = (
       <EvalBlocC team={t} patch={patch} hasOthers={others.length > 0}
         onNext={() => { if (others.length > 0) setStep(3); else { patch({ done: true }); setStep(4); } }}
         onBack={() => setStep(1)}
       />
     );
-    if (step === 3) return (
+    else if (step === 3) content = (
       <EvalImpacts team={t} others={others} teams={teams} patch={patch}
         onNext={() => { patch({ done: true }); setStep(4); }}
         onBack={() => setStep(2)}
       />
     );
-    if (step === 4) return (
+    else if (step === 4) content = (
       <ResultsScreen
         team={t} pending={pending} evTeams={evTeams}
         showDist={showDist} setShowDist={setShowDist}
@@ -110,17 +116,27 @@ export default function App() {
         mdModal={mdModal}
       />
     );
-    return <div style={W}><p>Chargement...</p></div>;
+    else content = <p>Chargement...</p>;
+  } else if (screen === "ecosystem") {
+    content = (
+      <EcosystemScreen
+        results={results} teams={teams} goView={goView} previewMD={previewMD}
+        onBack={() => setScreen("home")}
+        onAddTeam={() => { setSMode("single"); setNName(""); setScreen("setup"); }}
+        mdModal={mdModal}
+      />
+    );
   }
 
-  if (screen === "ecosystem") return (
-    <EcosystemScreen
-      results={results} teams={teams} goView={goView} previewMD={previewMD}
-      onBack={() => setScreen("home")}
-      onAddTeam={() => { setSMode("single"); setNName(""); setScreen("setup"); }}
-      mdModal={mdModal}
-    />
+  // ── RENDER WITH LAYOUT ──
+  return (
+    <Layout
+      teams={teams} evTeams={evTeams} results={results} screen={screen}
+      onAddTeam={() => { setSMode("single"); setNName(""); setBText(""); setScreen("setup"); }}
+      onTeamClick={(idx, isEval) => isEval ? goEval(idx) : goView(idx)}
+      onExport={previewMD}
+    >
+      {content}
+    </Layout>
   );
-
-  return null;
 }
