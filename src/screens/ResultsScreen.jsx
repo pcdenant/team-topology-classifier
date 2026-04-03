@@ -1,6 +1,6 @@
-import { TL, TC, TK } from "../data/constants";
+import { TL, TK } from "../data/constants";
 import { ACTS, getClarityMessage, getGapMessage } from "../data/actions";
-import { W, BP, BS, BT, CD, UP } from "../styles";
+import { C, BP, BS, BT, CARD, CARD_CREME, LABEL, TYPE_CLR, CLAR_CLR, badge } from "../styles";
 import { analyze, getFlags } from "../scoring/analyze";
 import { MiniBar, Flag } from "../components/Indicators";
 
@@ -15,74 +15,88 @@ export default function ResultsScreen({
   const hid = fl.slice(3);
 
   return (
-    <div style={W}>
-      <h2 style={{ fontSize: 20, marginBottom: 4 }}>{team.name}</h2>
-
-      {/* Clarity index */}
-      <div style={{ padding: 16, borderRadius: 10, marginBottom: 14, background: a.cl.bg, border: `2px solid ${a.cl.bd}` }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-          <span style={UP}>Indice de clarté</span>
-          <span style={{ fontSize: 26, fontWeight: 800, color: a.cl.c }}>{a.cP}%</span>
-        </div>
-        <div style={{ height: 6, background: "#e5e7eb", borderRadius: 3, marginBottom: 10 }}>
-          <div style={{ height: "100%", borderRadius: 3, width: `${a.cP}%`, background: a.cl.c }} />
-        </div>
-        <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: "#444" }}>{getClarityMessage(a.cl, a.cK, a.c2K)}</p>
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+        <h2 style={{ fontSize: 24, fontWeight: 800, margin: 0 }}>{team.name}</h2>
+        <span style={badge(CLAR_CLR[a.cl.lv] + "18", CLAR_CLR[a.cl.lv])}>{a.cl.lb}</span>
       </div>
 
-      {/* Current → Target */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, justifyContent: "center", margin: "14px 0" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 10, color: "#888" }}>AUJOURD'HUI</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: TC[a.cK] }}>{TL[a.cK]}</div>
-          <div style={{ fontSize: 12, color: "#888" }}>{a.cP}%</div>
+      {/* Top metrics row */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
+        {/* Clarity index */}
+        <div style={{ ...CARD, background: a.cl.lv === "high" ? C.vertLight : a.cl.lv === "medium" ? C.warningBg : C.dangerBg, border: "none" }}>
+          <div style={{ ...LABEL, color: CLAR_CLR[a.cl.lv], marginBottom: 8 }}>Indice de clarté</div>
+          <div style={{ fontSize: 42, fontWeight: 800, color: CLAR_CLR[a.cl.lv], lineHeight: 1 }}>{a.cP}%</div>
+          <div style={{ height: 6, background: "#00000010", borderRadius: 3, marginTop: 12 }}>
+            <div style={{ height: "100%", borderRadius: 3, width: `${a.cP}%`, background: CLAR_CLR[a.cl.lv], transition: "width 0.5s" }} />
+          </div>
+          <p style={{ margin: "10px 0 0", fontSize: 13, lineHeight: 1.6, color: C.textMuted }}>{getClarityMessage(a.cl, a.cK, a.c2K)}</p>
         </div>
-        <div style={{ fontSize: 22, color: a.cK !== a.tK ? "#d97706" : "#059669" }}>→</div>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 10, color: "#888" }}>OBJECTIF</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: TC[a.tK] }}>{TL[a.tK]}</div>
-          <div style={{ fontSize: 12, color: "#888" }}>{a.tP}%</div>
+
+        {/* Current → Target */}
+        <div style={CARD}>
+          <div style={{ ...LABEL, marginBottom: 12 }}>Transition</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, justifyContent: "center" }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: C.textLight, fontWeight: 600, marginBottom: 4 }}>AUJOURD'HUI</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: TYPE_CLR[a.cK] }}>{TL[a.cK]}</div>
+              <div style={{ fontSize: 13, color: C.textLight }}>{a.cP}%</div>
+            </div>
+            <div style={{ fontSize: 24, color: a.cK !== a.tK ? C.warning : C.vert }}>→</div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: C.textLight, fontWeight: 600, marginBottom: 4 }}>OBJECTIF</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: TYPE_CLR[a.tK] }}>{TL[a.tK]}</div>
+              <div style={{ fontSize: 13, color: C.textLight }}>{a.tP}%</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Distribution (accordion) */}
-      {showDist && (
-        <div style={{ marginBottom: 14 }}>
-          {TK.map(k => <MiniBar key={k} label={TL[k]} cur={a.tC[k]} tgt={a.tT[k]} color={TC[k]} />)}
+      {/* Distribution accordion */}
+      <div style={{ ...CARD, marginBottom: 14 }}>
+        <div onClick={() => setShowDist(!showDist)}
+          style={{ ...LABEL, cursor: "pointer", userSelect: "none", marginBottom: showDist ? 12 : 0 }}>
+          {showDist ? "▾" : "▸"} Distribution
         </div>
-      )}
-      <button style={{ ...BT, marginBottom: 14 }} onClick={() => setShowDist(!showDist)}>{showDist ? "Masquer" : "Voir"} la distribution</button>
+        {showDist && TK.map(k => <MiniBar key={k} label={TL[k]} cur={a.tC[k]} tgt={a.tT[k]} color={TYPE_CLR[k]} />)}
+      </div>
 
       {/* 80/20 plan */}
-      <div style={{ ...CD, background: "#f8fafc" }}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Plan 80/20 — Devenir {TL[a.tK]}</div>
-        <p style={{ fontSize: 12, color: "#666", margin: "0 0 10px" }}>{getGapMessage(a)}</p>
+      <div style={CARD_CREME}>
+        <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 4, color: C.text }}>Plan 80/20 — Devenir {TL[a.tK]}</div>
+        <p style={{ fontSize: 13, color: C.textMuted, margin: "0 0 14px", lineHeight: 1.6 }}>{getGapMessage(a)}</p>
         {(ACTS[a.tK] || []).map((act, i) => (
-          <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 6 }}>
-            <div style={{ minWidth: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: TC[a.tK], color: "#fff", fontWeight: 700, fontSize: 11 }}>{i + 1}</div>
-            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>{act}</p>
+          <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 8 }}>
+            <div style={{
+              minWidth: 24, height: 24, borderRadius: "50%",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              background: C.vert, color: "#fff", fontWeight: 800, fontSize: 12, flexShrink: 0,
+            }}>{i + 1}</div>
+            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6 }}>{act}</p>
           </div>
         ))}
       </div>
 
       {/* Flags */}
       {fl.length > 0 && (
-        <div style={{ marginTop: 10 }}>
-          <div style={{ ...UP, marginBottom: 6 }}>Signaux</div>
+        <div style={{ marginTop: 16 }}>
+          <div style={{ ...LABEL, marginBottom: 8 }}>Signaux</div>
           {vis.map((f, i) => <Flag key={i} {...f} />)}
           {hid.length > 0 && !showAllFlags && (
-            <button style={{ ...BT, marginTop: 4 }} onClick={() => setShowAllFlags(true)}>+{hid.length} signal{hid.length > 1 ? "s" : ""}</button>
+            <button style={{ ...BT, marginTop: 4 }} onClick={() => setShowAllFlags(true)}>
+              +{hid.length} signal{hid.length > 1 ? "s" : ""}
+            </button>
           )}
           {showAllFlags && hid.map((f, i) => <Flag key={`h${i}`} {...f} />)}
         </div>
       )}
 
       {/* Actions */}
-      <div style={{ display: "flex", gap: 10, marginTop: 20, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 10, marginTop: 24, flexWrap: "wrap" }}>
         <button style={BS} onClick={onBack}>← Retour</button>
-        <button style={BT} onClick={onEdit}>✏️ Modifier</button>
+        <button style={BT} onClick={onEdit}>Modifier</button>
         {pending.length > 0 && <button style={BP} onClick={onNextTeam}>Suivante →</button>}
-        {evTeams.length >= 2 && <button style={{ ...BP, background: "#059669" }} onClick={onEcosystem}>Écosystème →</button>}
+        {evTeams.length >= 2 && <button style={{ ...BP, background: C.vert, color: "#fff" }} onClick={onEcosystem}>Écosystème →</button>}
       </div>
       {mdModal}
     </div>
